@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>HuquqshunosAI — AI yordamchi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Marked.js for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- PWA Manifest for app-like install -->
+  <link rel="manifest" href="data:application/manifest+json,{
+    'name': 'HuquqshunosAI',
+    'short_name': 'HuquqAI',
+    'start_url': '/',
+    'display': 'standalone',
+    'background_color': '#f7f7f9',
+    'theme_color': '#da4700',
+    'icons': [{'src': 'data:image/svg+xml;base64,...', 'sizes': '192x192', 'type': 'image/png'}]
+  }">
+  <style>
+    /* 🌞 LIGHT MODE VARIABLES */
+    :root {
+      --bg-gradient: linear-gradient(180deg, #f7f7f9 0%, #f2f2f7 100%);
+      --card-bg: #ffffff;
+      --text-primary: #111;
+      --text-muted: #7a7a7a;
+      --accent: #da4700;
+      --radius: 24px;
+      --shadow: 0 8px 26px rgba(0,0,0,0.06);
+      --apple-glow: rgba(255,255,255,0.65);
+      --const-width: 980px;
+      --user-msg-bg: #ffab826e;
+      --bot-msg-bg: #f0f0f0;
+      --header-height: 80px;
+      --input-height: 80px;
+      --bg-head: white;
+      --border-light: rgba(0,0,0,0.1);
+      --particle-color: rgba(0,0,0,0.3);
+      --code-bg: rgba(0,0,0,0.1);
+      --code-border: rgba(0,0,0,0.2);
+    }
+    /* 🌙 DARK MODE VARIABLES */
+    :root.dark {
+      --bg-gradient: linear-gradient(180deg, #0d0d0f 0%, #1a1a1d 100%);
+      --card-bg: #1f1f23;
+      --text-primary: #f1f1f1;
+      --text-muted: #9a9a9a;
+      --accent: #ff7b33;
+      --shadow: 0 8px 26px rgba(0,0,0,0.45);
+      --user-msg-bg: #da4700;
+      --bot-msg-bg: #111;
+      --bg-head: #0d0d0f;
+      --border-light: rgba(255,255,255,0.1);
+      --particle-color: rgba(255,255,255,0.3);
+      --code-bg: rgba(255,255,255,0.1);
+      --code-border: rgba(255,255,255,0.2);
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Inter, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background .35s ease, color .35s ease;
+    }
+    .beta-notice {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #fff3cd;
+      color: #ff0101;
+      padding: 8px 0;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 101;
+      border-bottom: 1px solid #ffeaa7;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .notice-text {
+      display: inline-block;
+      padding-left: 100%;
+      animation: scrollLeft 25s linear infinite;
+    }
+    @keyframes scrollLeft {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+    :root.dark .beta-notice {
+      background: #2a2a2a;
+      color: #ff0000;
+      border-bottom: 1px solid #ff0000;
+    }
+    .header {
+      position: fixed;
+      top: 40px; /* Adjusted for beta notice */
+      left: 0;
+      width: 100%;
+      height: var(--header-height);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .logo { font-size: 22px; font-weight: 700; }
+    .main-content {
+      flex: 1;
+      position: relative;
+      margin-top: calc(var(--header-height) + 40px); /* Adjusted for beta notice */
+      padding: 20px 24px;
+      max-width: var(--const-width);
+      margin-left: auto;
+      margin-right: auto;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: var(--input-height);
+      box-sizing: border-box;
+    }
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      background: transparent;
+      padding: 20px 0;
+    }
+    .messages-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .messages-container::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.05);
+      border-radius: 3px;
+    }
+    .messages-container::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 3px;
+    }
+    h1 { font-size: 32px; font-weight: 700; margin: 0 0 10px 0; text-align: center; }
+    h2 { margin: 0 0 4px 0; font-size: 26px; font-weight: 600; text-align: center; }
+    p.subtext { color: var(--text-muted); font-size: 15px; margin-bottom: 40px; text-align: center; }
+    /* Cards */
+    .card-grid { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 40px; }
+    .card {
+      width: 240px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      text-align: left;
+      cursor: pointer;
+      transition: transform .15s ease, background .3s ease, color .3s ease;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.1); }
+    .card-title { font-size: 17px; font-weight: 600; margin-top: 10px; }
+    .card-sub { font-size: 14px; color: var(--text-muted); }
+    /* Welcome and Chat Sections */
+    #welcome-section {
+      opacity: 1;
+      transition: opacity 0.3s ease;
+      text-align: center;
+    }
+    #welcome-section.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #chat-messages {
+      display: none;
+      text-align: left;
+      background: transparent;
+      box-shadow: none;
+      border: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #chat-messages.visible {
+      display: block;
+      opacity: 1;
+    }
+    .message {
+      display: flex;
+      align-items: flex-end;
+      margin: 16px 0;
+      animation: fadeIn 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .message-content {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      background: var(--user-msg-bg);
+      color: var(--text-primary);
+      line-height: 1.5;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .bot-message {
+      flex-direction: row;
+    }
+    .bot-message .message-content {
+      background: var(--bot-msg-bg);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+    }
+    .bot-message .message-content p {
+      margin: 0 0 1em 0;
+    }
+    .bot-message .message-content strong {
+      font-weight: 700;
+    }
+    .bot-message .message-content em {
+      font-style: italic;
+    }
+    /* Enhanced Markdown Styling */
+    .bot-message .message-content ul,
+    .bot-message .message-content ol {
+      margin: 1em 0;
+      padding-left: 1.5em;
+    }
+    .bot-message .message-content li {
+      margin: 0.5em 0;
+    }
+    .bot-message .message-content blockquote {
+      margin: 1em 0;
+      padding-left: 1em;
+      border-left: 3px solid var(--accent);
+      font-style: italic;
+    }
+    .bot-message .message-content code {
+      background: var(--code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+      font-family: monospace;
+      border: 1px solid var(--code-border);
+    }
+    .bot-message .message-content pre {
+      background: var(--code-bg);
+      padding: 1em;
+      border-radius: 6px;
+      overflow-x: auto;
+      border: 1px solid var(--code-border);
+      font-family: monospace;
+    }
+    .bot-message .message-content pre code {
+      background: none;
+      padding: 0;
+      border: none;
+    }
+    .bot-message .message-content table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+    .bot-message .message-content th,
+    .bot-message .message-content td {
+      border: 1px solid var(--border-light);
+      padding: 0.5em;
+      text-align: left;
+    }
+    .bot-message .message-content th {
+      background: rgba(0,0,0,0.05);
+    }
+    :root.dark .bot-message .message-content th {
+      background: rgba(255,255,255,0.05);
+    }
+    .user-message {
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+    }
+    .user-message .message-content {
+      margin-left: auto;
+      margin-right: 0;
+      border-bottom-right-radius: 4px;
+      background: var(--user-msg-bg);
+    }
+    .message-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-light);
+    }
+    .message-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .message-feedback {
+      display: flex;
+      gap: 12px;
+    }
+    .action-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: color 0.2s ease, background 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .action-btn:hover { 
+      color: var(--accent);
+      background: rgba(218, 71, 0, 0.1);
+    }
+    .action-btn.active { 
+      color: var(--accent); 
+      background: rgba(218, 71, 0, 0.1);
+    }
+    /* Typing Indicator */
+    .typing-indicator {
+      display: none;
+      margin: 16px 0;
+    }
+    .typing-indicator.visible { display: flex; align-items: flex-end; }
+    .typing-content {
+      background: var(--bot-msg-bg);
+      border-radius: 18px;
+      padding: 12px 16px;
+      border-bottom-left-radius: 4px;
+    }
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+    }
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      animation: typingPulse 1.4s infinite ease-in-out;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingPulse {
+      0%, 60%, 100% { transform: scale(1); opacity: 0.5; }
+      30% { transform: scale(1.2); opacity: 1; }
+    }
+    /* Typing Effect for Bot Messages - Character by Character */
+    .message-content.typing {
+      border-right: 0.1em solid var(--accent);
+      overflow: hidden;
+      animation: blink-caret 0.75s step-end infinite;
+    }
+    .message-content.typing span {
+      border-right: 0.1em solid var(--accent);
+      animation: blink-caret 0.75s step-end infinite;
+    }
+    @keyframes blink-caret {
+      from, to { border-color: transparent; }
+      50% { border-color: var(--accent); }
+    }
+    /* Chat bar - Fixed bottom */
+    .chat-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: var(--input-height);
+      background: transparent;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 10px 24px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+      z-index: 100;
+    }
+    .chat-input {
+      flex: 1;
+      max-width: 700px;
+      padding: 20px 32px;
+      border-radius: 100px;
+      border: 1px solid rgba(0,0,0,0.1);
+      background: var(--card-bg);
+      color: var(--text-primary);
+      font-size: 16px;
+      outline: none;
+      transition: all .3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .chat-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(218, 71, 0, 0.1);
+    }
+    .chat-input:invalid { animation: shake 0.5s ease-in-out; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .send-btn {
+      padding: 20px 36px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 100px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .25s ease;
+      box-shadow: 0 2px 8px rgba(218, 71, 0, 0.2);
+      white-space: nowrap;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 60px;
+    }
+    .send-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(218, 71, 0, 0.3);
+      opacity: .9;
+    }
+    .send-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    /* AI Particle Dust */
+    .particle-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: var(--particle-color);
+      border-radius: 50%;
+      filter: blur(0.5px);
+      animation: floatParticle linear infinite;
+    }
+    @keyframes floatParticle {
+      0% { transform: translateY(0) scale(1); opacity: 0.5; }
+      100% { transform: translateY(-140vh) scale(0.4); opacity: 0; }
+    }
+    /* Waveform */
+    .waveform { width: 100%; max-width: 380px; height: 34px; margin: 0 auto 26px auto; display: flex; justify-content: center; gap: 6px; }
+    .wave-bar {
+      width: 6px;
+      background: var(--accent);
+      border-radius: 8px;
+      animation: waveAnim 1.2s ease-in-out infinite;
+    }
+    @keyframes waveAnim {
+      0% { height: 6px; }
+      50% { height: 28px; }
+      100% { height: 6px; }
+    }
+    /* 🌗 THEME TOGGLE BUTTON - fixed position */
+    .theme-toggle {
+      position: fixed;
+      top: 60px; /* Adjusted for beta notice */
+      left: 20px;
+      width: 48px;
+      height: 24px;
+      background: #cfcfcf;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      transition: background .3s ease;
+      z-index: 9999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .theme-toggle.dark { background: #555; }
+    .toggle-circle {
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform .3s ease;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    .theme-toggle.dark .toggle-circle { transform: translateX(22px); }
+    /* Scroll to Bottom Button */
+    .scroll-to-bottom {
+      position: fixed;
+      bottom: 120px;
+      right: 20px;
+      width: 48px;
+      height: 48px;
+      background: var(--card-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
+      z-index: 100;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    .scroll-to-bottom:hover {
+      background: var(--accent);
+      color: white;
+      transform: scale(1.05);
+    }
+    /* Responsive */
+    @media (max-width: 768px) {
+      .main-content { padding: 20px 16px; }
+      .card-grid { flex-direction: column; align-items: center; gap: 12px; }
+      .card { width: 100%; max-width: 280px; }
+      .chat-bar { padding: 10px 16px; gap: 8px; }
+      .chat-input { padding: 18px 24px; font-size: 16px; max-width: calc(100vw - 120px); }
+      .send-btn { padding: 18px 28px; font-size: 16px; min-width: 50px; }
+      .message-content { max-width: 90%; padding: 10px 14px; }
+      h1 { font-size: 28px; }
+      h2 { font-size: 22px; }
+      .waveform { max-width: 300px; }
+      .messages-container { padding: 16px 0; }
+      .theme-toggle { width: 44px; height: 22px; top: 56px; left: 16px; }
+      .toggle-circle { width: 18px; height: 18px; }
+      .theme-toggle.dark .toggle-circle { transform: translateX(20px); }
+      .scroll-to-bottom { bottom: 110px; right: 16px; width: 44px; height: 44px; font-size: 16px; }
+      .message-feedback { gap: 8px; }
+      .action-btn { font-size: 11px; padding: 3px 6px; }
+      .beta-notice { font-size: 13px; padding: 6px 0; }
+      .notice-text { animation-duration: 20s; }
+    }
+    @media (max-width: 480px) {
+      .header { top: 40px; height: 60px; }
+      .logo { font-size: 20px; }
+      .main-content { margin-top: calc(60px + 40px); padding: 16px 12px; padding-bottom: var(--input-height); }
+      .chat-bar { height: var(--input-height); padding: 8px 12px; margin-bottom: 10px; }
+      .chat-input { padding: 16px 20px; }
+      .send-btn { padding: 16px 24px; min-width: 45px; }
+      h1 { font-size: 24px; }
+      h2 { font-size: 20px; }
+      p.subtext { font-size: 14px; }
+      .card { padding: 16px; }
+      .card-title { font-size: 16px; }
+      .card-sub { font-size: 13px; }
+      .theme-toggle { width: 40px; height: 20px; top: 52px; left: 12px; padding: 1px; }
+      .toggle-circle { width: 16px; height: 16px; }
+      .theme-toggle.dark .toggle-circle { transform: translateX(18px); }
+      .scroll-to-bottom { bottom: 100px; right: 12px; width: 40px; height: 40px; font-size: 14px; }
+      .beta-notice { font-size: 12px; padding: 5px 0; }
+      .notice-text { animation-duration: 18s; }
+    }
+  </style>
+</head>
+<body>
+  <div class="beta-notice">
+    <span class="notice-text">Bu sayt test rejimida ishlamoqda, bazi imkoniyatlar hali yo'q yoki ishlamasligi mumkin! Google AI Studio (Genini) bilan integratsiya qilingan. &nbsp;&nbsp;&nbsp;</span>
+  </div>
+  <div class="theme-toggle" id="toggleTheme">
+    <div class="toggle-circle"></div>
+  </div>
+  <div class="particle-container" id="particles" style="opacity:.5"></div>
+  <div class="header">
+    <div class="logo">HuquqshunosAI</div>
+  </div>
+  <div class="main-content">
+    <div class="messages-container">
+      <div id="welcome-section">
+        <div class="waveform">
+          <div class="wave-bar" style="animation-delay:0s"></div>
+          <div class="wave-bar" style="animation-delay:0.15s"></div>
+          <div class="wave-bar" style="animation-delay:0.3s"></div>
+          <div class="wave-bar" style="animation-delay:0.45s"></div>
+          <div class="wave-bar" style="animation-delay:0.6s"></div>
+        </div>
+        <h1>Assalomu alaykum</h1>
+        <h2>Sizga qanday yordam bera olaman?</h2>
+        <p class="subtext">Men sizga O'zbekiston qonunlari, huquqiy masalalar va maslahatlar bo'yicha yordam beraman. Quyidagi misollar orqali savol bering</p>
+        <div class="card-grid">
+          <div class="card">
+            <div>⚖️</div>
+            <div class="card-title">O'zbekiston Fuqarolik kodeksining 5-moddasi nima?</div>
+            <div class="card-sub">Fuqarolik kodeksi</div>
+          </div>
+          <div class="card">
+            <div>🤖</div>
+            <div class="card-title">Mehnat shartnomasini bekor qilish qoidalari qanday?</div>
+            <div class="card-sub">Mehnat huquqi</div>
+          </div>
+          <div class="card">
+            <div>🛡️</div>
+            <div class="card-title">Oilaviy huquqda ajralish jarayoni qanday o'tkaziladi?</div>
+            <div class="card-sub">Oilaviy huquq</div>
+          </div>
+        </div>
+      </div>
+      <!-- Typing Indicator -->
+      <div class="typing-indicator" id="typingIndicator">
+        <div class="typing-content">
+          <div class="typing-dots">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      </div>
+      <div id="chat-messages"></div>
+    </div>
+  </div>
+  <div class="scroll-to-bottom" id="scrollToBottom">
+    <i class="fas fa-arrow-down"></i>
+  </div>
+  <div class="chat-bar">
+    <input class="chat-input" placeholder="Savolingizni kiriting..."/>
+    <button class="send-btn" id="sendBtn"><i class="fas fa-rocket"></i></button>
+  </div>
+<script>
+  // Configure Marked for better rendering (breaks: true for newlines)
+  marked.setOptions({
+    breaks: true,
+  });
+
+  const SYSTEM_PROMPT = `You are HuquqshunosAI, an AI assistant specialized in Uzbek law (O'zbekiston qonunlari). You help with legal questions, explanations, and advice based on Uzbekistan's legislation. Always respond in Uzbek language (o'zbek tilida). Be accurate, helpful, and cite relevant laws if possible. Do not give official legal advice; suggest consulting a lawyer for serious matters.`;
+
+  let chatHistory = [{ role: "model", parts: [{ text: SYSTEM_PROMPT }] }];
+
+  // Particle generation
+  const particleContainer = document.getElementById("particles");
+  for (let i = 0; i < 22; i++) {
+    const p = document.createElement("div");
+    p.className = "particle";
+    p.style.left = Math.random() * 100 + "%";
+    p.style.bottom = "-20px";
+    p.style.animationDuration = 4 + Math.random() * 6 + "s";
+    p.style.animationDelay = Math.random() * 4 + "s";
+    particleContainer.appendChild(p);
+  }
+
+  // Theme script
+  const toggleTheme = document.getElementById("toggleTheme");
+  const root = document.documentElement;
+  if (localStorage.getItem("theme") === "dark") {
+    root.classList.add("dark");
+    toggleTheme.classList.add("dark");
+  }
+  toggleTheme.addEventListener("click", () => {
+    root.classList.toggle("dark");
+    toggleTheme.classList.toggle("dark");
+    localStorage.setItem(
+      "theme",
+      root.classList.contains("dark") ? "dark" : "light"
+    );
+  });
+
+  // Chat elements
+  const chatInput = document.querySelector(".chat-input");
+  const sendBtn = document.getElementById("sendBtn");
+  const typingIndicator = document.getElementById("typingIndicator");
+  const welcomeSection = document.getElementById("welcome-section");
+  const chatMessages = document.getElementById("chat-messages");
+  const messagesContainer = document.querySelector(".messages-container");
+  const scrollBtn = document.getElementById("scrollToBottom");
+
+  let isFirstMessage = true;
+  let lastUserMessage = null;
+
+  chatInput.focus();
+
+  function autoScroll() {
+    const atBottom =
+      messagesContainer.scrollTop + messagesContainer.clientHeight >=
+      messagesContainer.scrollHeight - 60;
+    if (atBottom) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }
+
+  // ✅ FIXED — full working backend proxy call
+  async function callGemini(userMessage) {
+    const requestBody = {
+      contents: chatHistory,
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      },
+    };
+
+    // Call backend instead of Google API directly
+    const response = await fetch("/api/gemini", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const botResponse = data.candidates[0].content.parts[0].text;
+
+    chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
+
+    return botResponse;
+  }
+
+  function createBotMessageStructure(content, onTypeComplete, startTime) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = "message bot-message";
+
+    const contentDiv = document.createElement("div");
+    contentDiv.className = "message-content typing";
+
+    const textSpan = document.createElement("span");
+    textSpan.innerHTML = "";
+    contentDiv.appendChild(textSpan);
+
+    const footer = document.createElement("div");
+    footer.className = "message-footer";
+
+    const genTime = document.createElement("div");
+    genTime.className = "message-time gen-time";
+    genTime.textContent = "";
+    footer.appendChild(genTime);
+
+    const feedbackDiv = document.createElement("div");
+    feedbackDiv.className = "message-feedback";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "action-btn";
+    copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+    copyBtn.title = "Nusxalash";
+    feedbackDiv.appendChild(copyBtn);
+
+    const regenBtn = document.createElement("button");
+    regenBtn.className = "action-btn";
+    regenBtn.innerHTML = '<i class="fas fa-redo"></i>';
+    regenBtn.title = "Qayta generatsiya qilish";
+    feedbackDiv.appendChild(regenBtn);
+
+    const likeBtn = document.createElement("button");
+    likeBtn.className = "action-btn";
+    likeBtn.innerHTML = '<i class="fas fa-thumbs-up"></i>';
+    likeBtn.title = "Yoqdi";
+    likeBtn.onclick = () => toggleFeedback(likeBtn, "like");
+    feedbackDiv.appendChild(likeBtn);
+
+    const dislikeBtn = document.createElement("button");
+    dislikeBtn.className = "action-btn";
+    dislikeBtn.innerHTML = '<i class="fas fa-thumbs-down"></i>';
+    dislikeBtn.title = "Yoqmadi";
+    dislikeBtn.onclick = () => toggleFeedback(dislikeBtn, "dislike");
+    feedbackDiv.appendChild(dislikeBtn);
+
+    footer.insertBefore(feedbackDiv, genTime);
+    contentDiv.appendChild(footer);
+    messageDiv.appendChild(contentDiv);
+
+    chatMessages.appendChild(messageDiv);
+    autoScroll();
+
+    typeWriter(content, textSpan, () => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      genTime.textContent = `Generated in ${elapsed.toFixed(1)}s`;
+
+      copyBtn.onclick = () => navigator.clipboard.writeText(content);
+      regenBtn.onclick = () => regenerateResponse(lastUserMessage, messageDiv);
+
+      contentDiv.classList.remove("typing");
+
+      if (onTypeComplete) onTypeComplete();
+    });
+
+    return messageDiv;
+  }
+
+  function addMessage(content, isUser = false) {
+    if (isUser) {
+      const messageDiv = document.createElement("div");
+      messageDiv.className = "message user-message";
+
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "message-content";
+
+      const textSpan = document.createElement("span");
+      textSpan.innerHTML = content;
+      contentDiv.appendChild(textSpan);
+
+      messageDiv.appendChild(contentDiv);
+      chatMessages.appendChild(messageDiv);
+      autoScroll();
+    } else {
+      createBotMessageStructure(content, () => {}, Date.now());
+    }
+  }
+
+  function toggleFeedback(btn, type) {
+    btn.classList.toggle("active");
+  }
+
+  function regenerateResponse(userMsg, currentBotDiv) {
+    if (!userMsg) return;
+
+    if (
+      chatHistory.length > 1 &&
+      chatHistory[chatHistory.length - 1].role === "model"
+    ) {
+      chatHistory.pop();
+    }
+
+    currentBotDiv.remove();
+
+    lastUserMessage = userMsg;
+
+    sendMessageWithHistory(userMsg);
+  }
+
+  async function sendMessageWithHistory(message) {
+    chatHistory.push({ role: "user", parts: [{ text: message }] });
+    const responseStart = Date.now();
+
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    typingIndicator.classList.add("visible");
+    autoScroll();
+
+    try {
+      const botResponse = await callGemini(message);
+      typingIndicator.classList.remove("visible");
+
+      createBotMessageStructure(
+        botResponse,
+        () => {
+          sendBtn.disabled = false;
+          sendBtn.innerHTML = '<i class="fas fa-rocket"></i>';
+        },
+        responseStart
+      );
+    } catch (error) {
+      typingIndicator.classList.remove("visible");
+
+      const errorMsg = `Xatolik yuz berdi: ${error.message}. Iltimos, serverni yoki backend konfiguratsiyasini tekshiring.`;
+
+      createBotMessageStructure(
+        errorMsg,
+        () => {
+          sendBtn.disabled = false;
+          sendBtn.innerHTML = '<i class="fas fa-rocket"></i>';
+        },
+        responseStart
+      );
+    }
+  }
+
+  messagesContainer.addEventListener("scroll", () => {
+    const isAtBottom =
+      messagesContainer.scrollTop + messagesContainer.clientHeight >=
+      messagesContainer.scrollHeight - 50;
+    scrollBtn.style.display = isAtBottom ? "none" : "flex";
+  });
+
+  scrollBtn.addEventListener("click", () => {
+    messagesContainer.scrollTo({
+      top: messagesContainer.scrollHeight,
+      behavior: "smooth",
+    });
+  });
+
+  scrollBtn.style.display = "none";
+
+  function typeWriter(content, element, callback) {
+    let charIndex = 0;
+    let rawText = "";
+    element.innerHTML = "";
+
+    function typeChar() {
+      if (charIndex < content.length) {
+        rawText += content.charAt(charIndex);
+        element.innerHTML = marked.parse(rawText);
+
+        const cursor = document.createElement("span");
+        cursor.innerHTML = "|";
+        cursor.style.borderRight = "0.1em solid var(--accent)";
+        cursor.style.animation = "blink-caret 0.75s step-end infinite";
+        element.appendChild(cursor);
+
+        charIndex++;
+        setTimeout(typeChar, 10);
+      } else {
+        element.innerHTML = marked.parse(rawText);
+        if (callback) callback();
+      }
+    }
+
+    typeChar();
+  }
+
+  function sendMessage() {
+    const message = chatInput.value.trim();
+    if (!message) {
+      chatInput.classList.add("invalid");
+      setTimeout(() => chatInput.classList.remove("invalid"), 500);
+      return;
+    }
+
+    if (isFirstMessage) {
+      welcomeSection.classList.add("hidden");
+      setTimeout(() => {
+        welcomeSection.style.display = "none";
+        chatMessages.classList.add("visible");
+        isFirstMessage = false;
+      }, 300);
+    }
+
+    lastUserMessage = message;
+
+    addMessage(message, true);
+
+    chatInput.value = "";
+
+    sendMessageWithHistory(message);
+  }
+
+  sendBtn.addEventListener("click", sendMessage);
+  chatInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
+
+  document.querySelectorAll(".card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const title = card.querySelector(".card-title").textContent;
+      chatInput.value = title;
+      sendMessage();
+    });
+  });
+</script>
+
+</body>
+</html>
